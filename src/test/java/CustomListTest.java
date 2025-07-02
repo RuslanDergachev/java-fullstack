@@ -1,4 +1,6 @@
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import work.CustomList;
 
 import java.util.ArrayList;
@@ -32,42 +34,49 @@ class CustomListTest {
         assertThat(baseList.size()).isEqualTo(11);
     }
 
-    @Test
-    void isEmptyListTest () {
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void isEmptyListTest (int initialElementsCount) {
         CustomList<Integer> list = new CustomList<>();
         ArrayList<Integer> baseList = new ArrayList<>();
-        assertThat(list.size()).isEqualTo(0);
-        assertThat(list.isEmpty()).isTrue();
-        assertThat(baseList.size()).isEqualTo(0);
-        assertThat(baseList.isEmpty()).isTrue();
-        list.add(1);
-        assertThat(list.size()).isEqualTo(1);
-        assertThat(list.isEmpty()).isFalse();
-        baseList.add(1);
-        assertThat(baseList.size()).isEqualTo(1);
-        assertThat(baseList.isEmpty()).isFalse();
+
+        for (int i = 0; i < initialElementsCount; i++) {
+            list.add(i);
+            baseList.add(i);
+        }
+
+        assertThat(list.size()).isEqualTo(initialElementsCount);
+        assertThat(list.isEmpty()).isEqualTo(initialElementsCount == 0);
+
+        assertThat(baseList.size()).isEqualTo(initialElementsCount);
+        assertThat(baseList.isEmpty()).isEqualTo(initialElementsCount == 0);
     }
 
-    @Test
-    void addTest () {
+    @ParameterizedTest
+    @ValueSource(ints = {1, 0, 5, 1000})
+    void addTest (int value) {
         CustomList<Integer> list = new CustomList<>();
-        list.add(1);
+        list.add(value);
         ArrayList<Integer> baseList = new ArrayList<>();
-        baseList.add(1);
+        baseList.add(value);
         assertThat(list.size()).isEqualTo(1);
         assertThat(baseList.size()).isEqualTo(1);
-        assertThat(list.get(0)).isEqualTo(1);
-        assertThat(baseList.get(0)).isEqualTo(1);
+        assertThat(list.get(0)).isEqualTo(value);
+        assertThat(baseList.get(0)).isEqualTo(value);
     }
 
-    @Test
-    void clearTest () {
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 5})
+    void clearTest (int initialSize) {
         CustomList<Integer> list = new CustomList<>();
         ArrayList<Integer> baseList = new ArrayList<>();
-        list.add(1);
-        assertThat(list.size()).isEqualTo(1);
-        baseList.add(1);
-        assertThat(list.size()).isEqualTo(1);
+        for (int i = 0; i < initialSize; i++) {
+            list.add(i);
+            baseList.add(i);
+        }
+        assertThat(list.size()).isEqualTo(initialSize);
+        assertThat(baseList.size()).isEqualTo(initialSize);
+
         list.clear();
         baseList.clear();
         assertThat(list.size()).isEqualTo(0);
