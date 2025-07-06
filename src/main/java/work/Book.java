@@ -1,0 +1,11 @@
+package work;
+
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
+public class Book {
+    private String title;
+    private String author;
+    private int pages;
+    private double price;
+}
