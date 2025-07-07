@@ -3,7 +3,6 @@ import work.customannotatition.BeforeEach;
 import work.customannotatition.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
@@ -92,7 +91,7 @@ public class CustomTestRunner {
         System.out.printf("Success rate: %.1f%%\n", totalTests == 0 ? 0 : (passedTests * 100.0 / totalTests));
     }
 
-    public static List<Class<?>> findClasses(String packageName) throws IOException, ClassNotFoundException {
+    public static List<Class<?>> findClasses(String packageName) throws ClassNotFoundException {
         String path = packageName.replace('.', '/');
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         URL resource = classLoader.getResource(path);
