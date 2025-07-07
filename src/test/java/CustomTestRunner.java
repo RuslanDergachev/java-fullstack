@@ -1,3 +1,5 @@
+import work.customannotatition.AfterEach;
+import work.customannotatition.BeforeEach;
 import work.customannotatition.Test;
 
 import java.io.File;
@@ -24,27 +26,54 @@ public class CustomTestRunner {
         System.out.println("Package: " + packageName);
         System.out.println("Classes scanned: " + classesToTest.size());
 
-        // Счётчик тестов
         for (Class<?> clazz : classesToTest) {
             Method[] methods = clazz.getDeclaredMethods();
+
+            List<Method> beforeEachMethods = new ArrayList<>();
+            List<Method> afterEachMethods = new ArrayList<>();
+
             for (Method method : methods) {
-                if (method.isAnnotationPresent(Test.class)) {
+                if (method.isAnnotationPresent(BeforeEach.class)) {
+                    beforeEachMethods.add(method);
+                }
+                if (method.isAnnotationPresent(AfterEach.class)) {
+                    afterEachMethods.add(method);
+                }
+            }
+
+            for (Method testMethod : methods) {
+                if (testMethod.isAnnotationPresent(Test.class)) {
                     totalTests++;
                     Object instance = clazz.getDeclaredConstructor().newInstance();
 
                     long start = System.currentTimeMillis();
                     try {
-                        method.invoke(instance);
+                        for (Method before : beforeEachMethods) {
+                            before.setAccessible(true);
+                            before.invoke(instance);
+                        }
+
+                        testMethod.setAccessible(true);
+                        testMethod.invoke(instance);
+
+                        for (Method after : afterEachMethods) {
+                            after.setAccessible(true);
+                            after.invoke(instance);
+                        }
+
                         long duration = System.currentTimeMillis() - start;
                         totalTime += duration;
                         passedTests++;
-                        results.add("✓ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms)");
+                        results.add(
+                                "✓ " + clazz.getSimpleName() + "." + testMethod.getName() + " (" + duration + "ms)");
                     } catch (Exception e) {
                         long duration = System.currentTimeMillis() - start;
                         totalTime += duration;
                         failedTests++;
                         Throwable cause = e.getCause() != null ? e.getCause() : e;
-                        results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms) - " + cause);
+                        results.add(
+                                "✗ " + clazz.getSimpleName() + "." + testMethod.getName() + " (" + duration + "ms) - " +
+                                        cause);
                     }
                 }
             }
@@ -60,6 +89,7 @@ public class CustomTestRunner {
         System.out.println("Failed: " + failedTests);
         System.out.println("Total execution time: " + totalTime + "ms");
         System.out.printf("Success rate: %.1f%%\n", totalTests == 0 ? 0 : (passedTests * 100.0 / totalTests));
+
     }
 
     public static List<Class<?>> findClasses(String packageName) throws IOException, ClassNotFoundException {
