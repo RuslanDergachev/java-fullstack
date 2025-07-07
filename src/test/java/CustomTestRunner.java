@@ -24,7 +24,7 @@ public class CustomTestRunner {
         System.out.println("Package: " + packageName);
         System.out.println("Classes scanned: " + classesToTest.size());
 
-        // Счётчик тестов
+        // Test counter
         for (Class<?> clazz : classesToTest) {
             Method[] methods = clazz.getDeclaredMethods();
             for (Method method : methods) {
@@ -62,7 +62,7 @@ public class CustomTestRunner {
         System.out.printf("Success rate: %.1f%%\n", totalTests == 0 ? 0 : (passedTests * 100.0 / totalTests));
     }
 
-    public static List<Class<?>> findClasses(String packageName) throws IOException, ClassNotFoundException {
+    public static List<Class<?>> findClasses(String packageName) throws ClassNotFoundException {
         String path = packageName.replace('.', '/');
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         URL resource = classLoader.getResource(path);
