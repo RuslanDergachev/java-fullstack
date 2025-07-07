@@ -1,7 +1,9 @@
 package work.configuration;
 
+import lombok.Data;
 import lombok.experimental.Accessors;
 
+@Data
 @Accessors(chain = true)
 public class Configuration {
     private String host;

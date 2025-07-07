@@ -1,5 +1,10 @@
-package work;
+package work.customannotatition;
 
+
+import work.configuration.Configuration;
+import work.exampleclasses.Book;
+import work.exampleclasses.Car;
+import work.exampleclasses.Person;
 
 public class LombokExamples {
 
@@ -105,10 +110,11 @@ public class LombokExamples {
         //    }
 
         //Annotation @Accessors(chain = true) from Lombok allows you to generate chained setters
-        // Configuration config = new Configuration()
-        //            .setHost("localhost")
-        //            .setPort(5432)
-        //            .setUsername("admin")
-        //            .setPassword("secret");
+        Configuration config = new Configuration()
+                    .setHost("localhost")
+                    .setPort(5432)
+                    .setUsername("admin")
+                    .setPassword("secret");
+        System.out.println("[@Accessors annotation] result: " + config);
     }
 }
