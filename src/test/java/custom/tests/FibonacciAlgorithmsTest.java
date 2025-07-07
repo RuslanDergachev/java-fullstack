@@ -1,7 +1,7 @@
 package custom.tests;
 
 import org.junit.jupiter.api.Assertions;
-import work.FibonacciAlgorithms;
+import work.fibonacciclasses.FibonacciAlgorithms;
 import work.customannotatition.Test;
 
 import java.util.ArrayList;

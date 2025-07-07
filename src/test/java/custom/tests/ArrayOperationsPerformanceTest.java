@@ -1,6 +1,6 @@
 package custom.tests;
 
-import work.ArrayOperations;
+import work.collectionclasses.ArrayOperations;
 import work.customannotatition.Test;
 
 import java.util.Arrays;

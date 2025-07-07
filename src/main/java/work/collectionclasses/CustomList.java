@@ -1,4 +1,4 @@
-package work;
+package work.collectionclasses;
 
 import java.util.Collection;
 import java.util.Iterator;
