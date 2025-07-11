@@ -55,6 +55,19 @@ public class HandMadeLinkedList<T> {
         return tail.data;
     }
 
+    public T get(int index) {
+        if (index < 0 || index >= size) throw new IndexOutOfBoundsException();
+        Node<T> current;
+        if (index < (size / 2)) {
+            current = head;
+            for (int i = 0; i < index; i++) current = current.next;
+        } else {
+            current = tail;
+            for (int i = size - 1; i > index; i--) current = current.prev;
+        }
+        return current.data;
+    }
+
     public int size() {
         return this.size;
     }
