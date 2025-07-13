@@ -104,10 +104,12 @@ public class FibonacciAlgorithmsTest {
     }
 
     private void printReport(List<PerformanceResult> results) {
+        System.out.println("-------------------------------------------------------");
         System.out.println("Fibonacci Performance Report:");
         System.out.printf("%-5s %-18s %-18s %-18s %-20s %-20s %-20s%n",
                           "n", "Recursive Time(ms)", "Memoized Time(ms)", "Iterative Time(ms)",
                           "Recursive Mem(bytes)", "Memoized Mem(bytes)", "Iterative Mem(bytes)");
+        System.out.println("-------------------------------------------------------");
         for (PerformanceResult r : results) {
             System.out.printf("%-5d %-18d %-18d %-18d %-20d %-20d %-20d%n",
                               r.n,

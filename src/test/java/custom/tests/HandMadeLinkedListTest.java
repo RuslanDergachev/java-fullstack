@@ -6,8 +6,8 @@ import work.handmadelinkedlist.HandMadeLinkedList;
 
 import java.util.NoSuchElementException;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class HandMadeLinkedListTest {
     private HandMadeLinkedList<Integer> list;
