@@ -112,13 +112,11 @@ public class HandMadeHashMapDoubleHashTest {
 
     @Test
     public void testCollisionHandling() {
-        // Создадим ключи, которые намеренно вызывают коллизии
-        // Для этого можно использовать кастомные объекты с одинаковым hashCode
         class Key {
             private final String val;
             Key(String val) { this.val = val; }
             @Override
-            public int hashCode() { return 42; } // фиксированный хэш для коллизии
+            public int hashCode() { return 42; }
             @Override
             public boolean equals(Object o) {
                 if (this == o) return true;

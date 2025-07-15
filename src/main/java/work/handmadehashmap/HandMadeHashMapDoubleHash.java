@@ -128,7 +128,7 @@ public class HandMadeHashMapDoubleHash<K, V> implements Map<K, V> {
             Entry<K, V> entry = table[index];
             if (entry == null) return null;
             if (!entry.deleted && Objects.equals(entry.key, key)) {
-                entry.deleted = true; // помечаем как удалённый
+                entry.deleted = true;
                 size--;
                 return entry.value;
             }
