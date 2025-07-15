@@ -1,6 +1,8 @@
 package custom.tests;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.params.provider.ValueSource;
+import work.customannotatition.ParameterizedTest;
 import work.fibonacciclasses.FibonacciAlgorithms;
 import work.customannotatition.Test;
 
@@ -38,55 +40,52 @@ public class FibonacciAlgorithmsTest {
     }
 
     // 2 & 3. Performance Benchmark + Memory Usage Analysis
-    @Test
-    public void performanceAndMemoryTest() {
+    @ParameterizedTest
+    @ValueSource(ints = {10, 20, 30, 35, 40, 45})
+    public void performanceAndMemoryTest(int n) {
         fibAlgo = new FibonacciAlgorithms();
-        int[] testInputs = {10, 20, 30, 35, 40, 45};
         List<PerformanceResult> results = new ArrayList<>();
 
-        for (int n : testInputs) {
-            PerformanceResult perfResult = new PerformanceResult();
-            perfResult.n = n;
+        PerformanceResult perfResult = new PerformanceResult();
+        perfResult.n = n;
 
-            // Recursive
-            System.gc();
-            sleep(100);
-            long memBefore = usedMemory();
-            long start = System.currentTimeMillis();
-            long valRec = FibonacciAlgorithms.fibonacciRecursive(n);
-            long end = System.currentTimeMillis();
-            long memAfter = usedMemory();
-            perfResult.recursiveTimeMs = end - start;
-            perfResult.recursiveMemoryBytes = memAfter - memBefore;
+        // Recursive
+        System.gc();
+        sleep(100);
+        long memBefore = usedMemory();
+        long start = System.currentTimeMillis();
+        long valRec = FibonacciAlgorithms.fibonacciRecursive(n);
+        long end = System.currentTimeMillis();
+        long memAfter = usedMemory();
+        perfResult.recursiveTimeMs = end - start;
+        perfResult.recursiveMemoryBytes = memAfter - memBefore;
 
-            // Memoized
-            System.gc();
-            sleep(100);
-            memBefore = usedMemory();
-            start = System.currentTimeMillis();
-            long valMemo = fibAlgo.fibonacciMemo(n);
-            end = System.currentTimeMillis();
-            memAfter = usedMemory();
-            perfResult.memoizedTimeMs = end - start;
-            perfResult.memoizedMemoryBytes = memAfter - memBefore;
+        // Memoized
+        System.gc();
+        sleep(100);
+        memBefore = usedMemory();
+        start = System.currentTimeMillis();
+        long valMemo = fibAlgo.fibonacciMemo(n);
+        end = System.currentTimeMillis();
+        memAfter = usedMemory();
+        perfResult.memoizedTimeMs = end - start;
+        perfResult.memoizedMemoryBytes = memAfter - memBefore;
 
-            // Iterative
-            System.gc();
-            sleep(100);
-            memBefore = usedMemory();
-            start = System.currentTimeMillis();
-            long valIter = FibonacciAlgorithms.fibonacciIterative(n);
-            end = System.currentTimeMillis();
-            memAfter = usedMemory();
-            perfResult.iterativeTimeMs = end - start;
-            perfResult.iterativeMemoryBytes = memAfter - memBefore;
+        // Iterative
+        System.gc();
+        sleep(100);
+        memBefore = usedMemory();
+        start = System.currentTimeMillis();
+        long valIter = FibonacciAlgorithms.fibonacciIterative(n);
+        end = System.currentTimeMillis();
+        memAfter = usedMemory();
+        perfResult.iterativeTimeMs = end - start;
+        perfResult.iterativeMemoryBytes = memAfter - memBefore;
 
-            // Verify correctness
-            Assertions.assertEquals(valRec, valMemo, "Values differ for n=" + n + " between recursive and memoized");
-            Assertions.assertEquals(valRec, valIter, "Values differ for n=" + n + " between recursive and iterative");
+        Assertions.assertEquals(valRec, valMemo, "Values differ for n=" + n + " between recursive and memoized");
+        Assertions.assertEquals(valRec, valIter, "Values differ for n=" + n + " between recursive and iterative");
 
-            results.add(perfResult);
-        }
+        results.add(perfResult);
 
         printReport(results);
     }
@@ -105,18 +104,11 @@ public class FibonacciAlgorithmsTest {
 
     private void printReport(List<PerformanceResult> results) {
         System.out.println("Fibonacci Performance Report:");
-        System.out.printf("%-5s %-18s %-18s %-18s %-20s %-20s %-20s%n",
-                          "n", "Recursive Time(ms)", "Memoized Time(ms)", "Iterative Time(ms)",
-                          "Recursive Mem(bytes)", "Memoized Mem(bytes)", "Iterative Mem(bytes)");
+        System.out.printf("%-5s %-18s %-18s %-18s %-20s %-20s %-20s%n", "n", "Recursive Time(ms)", "Memoized Time(ms)",
+                          "Iterative Time(ms)", "Recursive Mem(bytes)", "Memoized Mem(bytes)", "Iterative Mem(bytes)");
         for (PerformanceResult r : results) {
-            System.out.printf("%-5d %-18d %-18d %-18d %-20d %-20d %-20d%n",
-                              r.n,
-                              r.recursiveTimeMs,
-                              r.memoizedTimeMs,
-                              r.iterativeTimeMs,
-                              r.recursiveMemoryBytes,
-                              r.memoizedMemoryBytes,
-                              r.iterativeMemoryBytes);
+            System.out.printf("%-5d %-18d %-18d %-18d %-20d %-20d %-20d%n", r.n, r.recursiveTimeMs, r.memoizedTimeMs,
+                              r.iterativeTimeMs, r.recursiveMemoryBytes, r.memoizedMemoryBytes, r.iterativeMemoryBytes);
         }
 
         System.out.println("\nTime Complexity Analysis based on measurements:");

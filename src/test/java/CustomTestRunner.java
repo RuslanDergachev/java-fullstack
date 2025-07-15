@@ -1,6 +1,10 @@
+import org.junit.jupiter.params.provider.ValueSource;
+import work.customannotatition.BeforeEach;
+import work.customannotatition.ParameterizedTest;
 import work.customannotatition.Test;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
@@ -25,11 +29,19 @@ public class CustomTestRunner {
 
         // Test counter
         for (Class<?> clazz : classesToTest) {
-            Method[] methods = clazz.getDeclaredMethods();
-            for (Method method : methods) {
+            List<Method> beforeEachMethods = new ArrayList<>();
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(BeforeEach.class)) {
+                    beforeEachMethods.add(method);
+                }
+            }
+            for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Test.class)) {
                     totalTests++;
                     Object instance = clazz.getDeclaredConstructor().newInstance();
+                    for (Method bm : beforeEachMethods) {
+                        bm.invoke(instance);
+                    }
 
                     long start = System.currentTimeMillis();
                     try {
@@ -44,6 +56,39 @@ public class CustomTestRunner {
                         failedTests++;
                         Throwable cause = e.getCause() != null ? e.getCause() : e;
                         results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms) - " + cause);
+                    }
+                }
+                else if (method.isAnnotationPresent(ParameterizedTest.class) && method.isAnnotationPresent(ValueSource.class)) {
+                    ValueSource valueSource = method.getAnnotation(ValueSource.class);
+                    int[] ints = valueSource.ints();
+
+                    for (int param : ints) {
+                        totalTests++;
+                        Object instance = clazz.getDeclaredConstructor().newInstance();
+
+                        for (Method bm : beforeEachMethods) {
+                            bm.invoke(instance);
+                        }
+
+                        long start = System.currentTimeMillis();
+                        try {
+                            method.invoke(instance, param);
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            passedTests++;
+                            results.add("✓ " + clazz.getSimpleName() + "." + method.getName() + "(" + param + ") (" + duration + "ms)");
+                        } catch (InvocationTargetException e) {
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            failedTests++;
+                            Throwable cause = e.getCause() != null ? e.getCause() : e;
+                            results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + "(" + param + ") (" + duration + "ms) - " + cause.getClass().getSimpleName() + ": " + cause.getMessage());
+                        } catch (Exception e) {
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            failedTests++;
+                            results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + "(" + param + ") (" + duration + "ms) - " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                        }
                     }
                 }
             }
