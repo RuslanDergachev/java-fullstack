@@ -43,9 +43,8 @@ public class CustomTestRunner {
                     afterEachMethods.add(method);
                 }
             }
-
-            for (Method testMethod : methods) {
-                if (testMethod.isAnnotationPresent(Test.class)) {
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(Test.class)) {
                     totalTests++;
                     Object instance = clazz.getDeclaredConstructor().newInstance();
 
@@ -56,8 +55,8 @@ public class CustomTestRunner {
                             before.invoke(instance);
                         }
 
-                        testMethod.setAccessible(true);
-                        testMethod.invoke(instance);
+                        method.setAccessible(true);
+                        method.invoke(instance);
 
                         for (Method after : afterEachMethods) {
                             after.setAccessible(true);
@@ -68,14 +67,14 @@ public class CustomTestRunner {
                         totalTime += duration;
                         passedTests++;
                         results.add(
-                                "✓ " + clazz.getSimpleName() + "." + testMethod.getName() + " (" + duration + "ms)");
+                                "✓ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms)");
                     } catch (Exception e) {
                         long duration = System.currentTimeMillis() - start;
                         totalTime += duration;
                         failedTests++;
                         Throwable cause = e.getCause() != null ? e.getCause() : e;
                         results.add(
-                                "✗ " + clazz.getSimpleName() + "." + testMethod.getName() + " (" + duration + "ms) - " +
+                                "✗ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms) - " +
                                         cause);
                     }
                 }
