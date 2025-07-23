@@ -2,13 +2,18 @@ package custom.tests;
 
 import work.collectionclasses.ArrayOperations;
 import work.customannotatition.Test;
+import work.handmadelinkedlist.HandMadeLinkedList;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class ArrayOperationsPerformanceTest {
     private static final int[] SIZES = {1_000, 10_000, 100_000, 1_000_000};
+    private static final int[] SIZES_LINKED = {1_000, 10_000, 100_000};
     private static final int[] SHIFTS = {1, 10, 100, 1000};
 
     @Test
@@ -57,6 +62,47 @@ public class ArrayOperationsPerformanceTest {
 
                 System.out.printf("%-10d %-10d %-20d %-15d%n", size, shift, sysTime, loopTime);
             }
+        }
+    }
+
+    @Test
+    public void handMadeLinkedListPerformanceTest() {
+        System.out.printf("%-20s %-10s %-15s %-15s%n", "ListType", "Size", "AddLast(ms)", "Get(ms)");
+
+        for (int size : SIZES_LINKED) {
+            // ArrayList
+            List<Integer> arrayList = new ArrayList<>();
+            long start = System.currentTimeMillis();
+            for (int i = 0; i < size; i++) arrayList.add(i);
+            long addTime = System.currentTimeMillis() - start;
+
+            start = System.currentTimeMillis();
+            for (int i = 0; i < size; i++) arrayList.get(i);
+            long getTime = System.currentTimeMillis() - start;
+
+            System.out.printf("%-20s %-10d %-15d %-15d%n", "ArrayList", size, addTime, getTime);
+
+            HandMadeLinkedList<Integer> handmadeList = new HandMadeLinkedList<>();
+            start = System.currentTimeMillis();
+            for (int i = 0; i < size; i++) handmadeList.addLast(i);
+            addTime = System.currentTimeMillis() - start;
+
+            start = System.currentTimeMillis();
+            for (int i = 0; i < size; i++) handmadeList.get(i);
+            getTime = System.currentTimeMillis() - start;
+
+            System.out.printf("%-20s %-10d %-15d %-15d%n", "HandMadeLinkedList", size, addTime, getTime);
+
+            List<Integer> linkedList = new LinkedList<>();
+            start = System.currentTimeMillis();
+            for (int i = 0; i < size; i++) linkedList.add(i);
+            addTime = System.currentTimeMillis() - start;
+
+            start = System.currentTimeMillis();
+            for (int i = 0; i < size; i++) linkedList.get(i);
+            getTime = System.currentTimeMillis() - start;
+
+            System.out.printf("%-20s %-10d %-15d %-15d%n", "LinkedList", size, addTime, getTime);
         }
     }
 }

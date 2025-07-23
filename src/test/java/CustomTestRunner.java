@@ -1,6 +1,7 @@
 import org.junit.jupiter.params.provider.ValueSource;
 import work.customannotatition.BeforeEach;
 import work.customannotatition.ParameterizedTest;
+import work.customannotatition.AfterEach;
 import work.customannotatition.Test;
 
 import java.io.File;
@@ -29,33 +30,52 @@ public class CustomTestRunner {
 
         // Test counter
         for (Class<?> clazz : classesToTest) {
+            Method[] methods = clazz.getDeclaredMethods();
+
             List<Method> beforeEachMethods = new ArrayList<>();
-            for (Method method : clazz.getDeclaredMethods()) {
+            List<Method> afterEachMethods = new ArrayList<>();
+
+            for (Method method : methods) {
                 if (method.isAnnotationPresent(BeforeEach.class)) {
                     beforeEachMethods.add(method);
+                }
+                if (method.isAnnotationPresent(AfterEach.class)) {
+                    afterEachMethods.add(method);
                 }
             }
             for (Method method : clazz.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(Test.class)) {
                     totalTests++;
                     Object instance = clazz.getDeclaredConstructor().newInstance();
-                    for (Method bm : beforeEachMethods) {
-                        bm.invoke(instance);
-                    }
 
                     long start = System.currentTimeMillis();
                     try {
+                        for (Method before : beforeEachMethods) {
+                            before.setAccessible(true);
+                            before.invoke(instance);
+                        }
+
+                        method.setAccessible(true);
                         method.invoke(instance);
+
+                        for (Method after : afterEachMethods) {
+                            after.setAccessible(true);
+                            after.invoke(instance);
+                        }
+
                         long duration = System.currentTimeMillis() - start;
                         totalTime += duration;
                         passedTests++;
-                        results.add("✓ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms)");
+                        results.add(
+                                "✓ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms)");
                     } catch (Exception e) {
                         long duration = System.currentTimeMillis() - start;
                         totalTime += duration;
                         failedTests++;
                         Throwable cause = e.getCause() != null ? e.getCause() : e;
-                        results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms) - " + cause);
+                        results.add(
+                                "✗ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms) - " +
+                                        cause);
                     }
                 }
                 else if (method.isAnnotationPresent(ParameterizedTest.class) && method.isAnnotationPresent(ValueSource.class)) {
