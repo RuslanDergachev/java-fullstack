@@ -1,8 +1,11 @@
-import work.customannotatition.AfterEach;
+import org.junit.jupiter.params.provider.ValueSource;
 import work.customannotatition.BeforeEach;
+import work.customannotatition.ParameterizedTest;
+import work.customannotatition.AfterEach;
 import work.customannotatition.Test;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
@@ -40,9 +43,8 @@ public class CustomTestRunner {
                     afterEachMethods.add(method);
                 }
             }
-
-            for (Method testMethod : methods) {
-                if (testMethod.isAnnotationPresent(Test.class)) {
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(Test.class)) {
                     totalTests++;
                     Object instance = clazz.getDeclaredConstructor().newInstance();
 
@@ -53,8 +55,8 @@ public class CustomTestRunner {
                             before.invoke(instance);
                         }
 
-                        testMethod.setAccessible(true);
-                        testMethod.invoke(instance);
+                        method.setAccessible(true);
+                        method.invoke(instance);
 
                         for (Method after : afterEachMethods) {
                             after.setAccessible(true);
@@ -65,15 +67,48 @@ public class CustomTestRunner {
                         totalTime += duration;
                         passedTests++;
                         results.add(
-                                "✓ " + clazz.getSimpleName() + "." + testMethod.getName() + " (" + duration + "ms)");
+                                "✓ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms)");
                     } catch (Exception e) {
                         long duration = System.currentTimeMillis() - start;
                         totalTime += duration;
                         failedTests++;
                         Throwable cause = e.getCause() != null ? e.getCause() : e;
                         results.add(
-                                "✗ " + clazz.getSimpleName() + "." + testMethod.getName() + " (" + duration + "ms) - " +
+                                "✗ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms) - " +
                                         cause);
+                    }
+                }
+                else if (method.isAnnotationPresent(ParameterizedTest.class) && method.isAnnotationPresent(ValueSource.class)) {
+                    ValueSource valueSource = method.getAnnotation(ValueSource.class);
+                    int[] ints = valueSource.ints();
+
+                    for (int param : ints) {
+                        totalTests++;
+                        Object instance = clazz.getDeclaredConstructor().newInstance();
+
+                        for (Method bm : beforeEachMethods) {
+                            bm.invoke(instance);
+                        }
+
+                        long start = System.currentTimeMillis();
+                        try {
+                            method.invoke(instance, param);
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            passedTests++;
+                            results.add("✓ " + clazz.getSimpleName() + "." + method.getName() + "(" + param + ") (" + duration + "ms)");
+                        } catch (InvocationTargetException e) {
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            failedTests++;
+                            Throwable cause = e.getCause() != null ? e.getCause() : e;
+                            results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + "(" + param + ") (" + duration + "ms) - " + cause.getClass().getSimpleName() + ": " + cause.getMessage());
+                        } catch (Exception e) {
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            failedTests++;
+                            results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + "(" + param + ") (" + duration + "ms) - " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                        }
                     }
                 }
             }
