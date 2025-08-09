@@ -13,9 +13,12 @@ import java.util.List;
 import java.util.Objects;
 
 public class CustomTestRunner {
-    public static void main(String[] args) throws Exception {
-        String packageName = "custom.tests";
-        List<Class<?>> classesToTest = findClasses(packageName);
+     static void main(String[] args) throws Exception {
+        String[] packageNames = {"custom.tests", "work.collectionclasses"};
+        List<Class<?>> classesToTest = new ArrayList<>();
+        for (String pkg : packageNames) {
+            classesToTest.addAll(findClasses(pkg));
+        }
 
         int totalTests = 0;
         int passedTests = 0;
@@ -25,10 +28,9 @@ public class CustomTestRunner {
         List<String> results = new ArrayList<>();
 
         System.out.println("=== Custom Test Runner Results ===");
-        System.out.println("Package: " + packageName);
+        System.out.println("Packages: " + String.join(", ", packageNames));
         System.out.println("Classes scanned: " + classesToTest.size());
 
-        // Test counter
         for (Class<?> clazz : classesToTest) {
             Method[] methods = clazz.getDeclaredMethods();
 
@@ -36,46 +38,73 @@ public class CustomTestRunner {
             List<Method> afterEachMethods = new ArrayList<>();
 
             for (Method method : methods) {
-                if (method.isAnnotationPresent(BeforeEach.class)) {
+                if (method.isAnnotationPresent(BeforeEach.class)
+                        || method.isAnnotationPresent(org.junit.jupiter.api.BeforeEach.class)) {
                     beforeEachMethods.add(method);
                 }
-                if (method.isAnnotationPresent(AfterEach.class)) {
+                if (method.isAnnotationPresent(AfterEach.class)
+                        || method.isAnnotationPresent(org.junit.jupiter.api.AfterEach.class)) {
                     afterEachMethods.add(method);
                 }
             }
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Test.class)) {
-                    totalTests++;
-                    Object instance = clazz.getDeclaredConstructor().newInstance();
 
-                    long start = System.currentTimeMillis();
-                    try {
-                        for (Method before : beforeEachMethods) {
-                            before.setAccessible(true);
-                            before.invoke(instance);
+            for (Method method : methods) {
+                boolean isCustomTest = method.isAnnotationPresent(Test.class);
+                boolean isJunitTest = method.isAnnotationPresent(org.junit.jupiter.api.Test.class);
+                boolean isRepeated = method.isAnnotationPresent(org.junit.jupiter.api.RepeatedTest.class);
+
+                if (isCustomTest || isJunitTest || isRepeated) {
+                    int repetitions = 1;
+                    if (isRepeated) {
+                        org.junit.jupiter.api.RepeatedTest rt = method.getAnnotation(org.junit.jupiter.api.RepeatedTest.class);
+                        repetitions = rt.value();
+                    }
+
+                    for (int rep = 1; rep <= repetitions; rep++) {
+                        totalTests++;
+                        Object instance = clazz.getDeclaredConstructor().newInstance();
+
+                        long start = System.currentTimeMillis();
+                        try {
+                            for (Method before : beforeEachMethods) {
+                                before.setAccessible(true);
+                                before.invoke(instance);
+                            }
+
+                            method.setAccessible(true);
+                            if (method.getParameterCount() == 0) {
+                                method.invoke(instance);
+                            } else {
+                                throw new IllegalStateException("Test method must have 0 parameters: " +
+                                                                        clazz.getSimpleName() + "." + method.getName());
+                            }
+
+                            for (Method after : afterEachMethods) {
+                                after.setAccessible(true);
+                                after.invoke(instance);
+                            }
+
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            passedTests++;
+                            String suffix = isRepeated ? (" [#" + rep + "/" + repetitions + "]") : "";
+                            results.add("✓ " + clazz.getSimpleName() + "." + method.getName() + suffix + " (" + duration + "ms)");
+                        } catch (InvocationTargetException ite) {
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            failedTests++;
+                            Throwable cause = ite.getCause() != null ? ite.getCause() : ite;
+                            String suffix = isRepeated ? (" [#" + rep + "/" + repetitions + "]") : "";
+                            results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + suffix + " (" + duration + "ms) - "
+                                                + cause.getClass().getSimpleName() + ": " + cause.getMessage());
+                        } catch (Exception e) {
+                            long duration = System.currentTimeMillis() - start;
+                            totalTime += duration;
+                            failedTests++;
+                            String suffix = isRepeated ? (" [#" + rep + "/" + repetitions + "]") : "";
+                            results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + suffix + " (" + duration + "ms) - "
+                                                + e.getClass().getSimpleName() + ": " + e.getMessage());
                         }
-
-                        method.setAccessible(true);
-                        method.invoke(instance);
-
-                        for (Method after : afterEachMethods) {
-                            after.setAccessible(true);
-                            after.invoke(instance);
-                        }
-
-                        long duration = System.currentTimeMillis() - start;
-                        totalTime += duration;
-                        passedTests++;
-                        results.add(
-                                "✓ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms)");
-                    } catch (Exception e) {
-                        long duration = System.currentTimeMillis() - start;
-                        totalTime += duration;
-                        failedTests++;
-                        Throwable cause = e.getCause() != null ? e.getCause() : e;
-                        results.add(
-                                "✗ " + clazz.getSimpleName() + "." + method.getName() + " (" + duration + "ms) - " +
-                                        cause);
                     }
                 }
                 else if (method.isAnnotationPresent(ParameterizedTest.class) && method.isAnnotationPresent(ValueSource.class)) {
@@ -87,11 +116,13 @@ public class CustomTestRunner {
                         Object instance = clazz.getDeclaredConstructor().newInstance();
 
                         for (Method bm : beforeEachMethods) {
+                            bm.setAccessible(true);
                             bm.invoke(instance);
                         }
 
                         long start = System.currentTimeMillis();
                         try {
+                            method.setAccessible(true);
                             method.invoke(instance, param);
                             long duration = System.currentTimeMillis() - start;
                             totalTime += duration;
@@ -108,6 +139,11 @@ public class CustomTestRunner {
                             totalTime += duration;
                             failedTests++;
                             results.add("✗ " + clazz.getSimpleName() + "." + method.getName() + "(" + param + ") (" + duration + "ms) - " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                        }
+
+                        for (Method am : afterEachMethods) {
+                            am.setAccessible(true);
+                            am.invoke(instance);
                         }
                     }
                 }
@@ -131,7 +167,8 @@ public class CustomTestRunner {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         URL resource = classLoader.getResource(path);
         if (resource == null) {
-            throw new IllegalArgumentException("Package not found: " + packageName);
+            // Пакет может отсутствовать — просто вернём пустой список
+            return List.of();
         }
 
         File dir = new File(resource.getFile());
