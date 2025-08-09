@@ -1,0 +1,105 @@
+=== Custom Test Runner Results ===
+Package: custom.tests
+Classes scanned: 7
+-------------------------------------------------------
+Array Shift Performance Test
+Size       Shift      System.arraycopy(ms) Manual Loop(ms)
+-------------------------------------------------------
+1000       1          0                    0
+1000       10         0                    0
+1000       100        0                    0
+10000      1          0                    0
+10000      10         0                    1
+10000      100        0                    0
+10000      1000       0                    1
+100000     1          0                    1
+100000     10         0                    0
+100000     100        0                    0
+100000     1000       0                    0
+1000000    1          0                    1
+1000000    10         0                    0
+1000000    100        0                    0
+1000000    1000       1                    0
+-------------------------------------------------------
+ListType             Size       AddLast(ms)     Get(ms)
+-------------------------------------------------------
+ArrayList            1000       0               0
+HandMadeLinkedList   1000       0               1
+LinkedList           1000       1               0
+ArrayList            10000      1               0
+HandMadeLinkedList   10000      0               31
+LinkedList           10000      0               32
+ArrayList            100000     1               0
+HandMadeLinkedList   100000     1               3038
+LinkedList           100000     2               3161
+-------------------------------------------------------
+MapType              Size       Put(ms)         Get(ms)
+-------------------------------------------------------
+HandMadeHashMap      10000      2               0
+JDK HashMap          10000      0               0
+HandMadeHashMap      100000     7               0
+JDK HashMap          100000     6               0
+HandMadeHashMap      500000     8               1
+JDK HashMap          500000     16              3
+-------------------------------------------------------
+MapType                   Size       Put(ms)         Get(ms)
+-------------------------------------------------------
+HandMadeHashMapDoubleHash 10000      1               1
+JDK HashMap               10000      0               0
+HandMadeHashMapDoubleHash 100000     21              0
+JDK HashMap               100000     2               0
+HandMadeHashMapDoubleHash 500000     17              1
+JDK HashMap               500000     23              7
+-------------------------------------------------------
+Fibonacci Performance Report:
+n     Recursive Time(ms) Memoized Time(ms)  Iterative Time(ms) Recursive Mem(bytes) Memoized Mem(bytes)  Iterative Mem(bytes)
+-------------------------------------------------------
+10    0                  0                  0                  0                    0                    0
+20    0                  0                  0                  0                    0                    0
+30    3                  0                  0                  0                    0                    0
+35    26                 0                  0                  0                    0                    0
+40    296                0                  0                  0                    28584                0
+45    3131               0                  0                  110624               12088                0
+
+Time Complexity Analysis based on measurements:
+- Recursive: Exponential growth in time; becomes impractical near n=40-45.
+- Memoized: Linear time; efficiently handles larger inputs.
+- Iterative: Fastest with minimal memory usage; linear time and constant space.
+Tests discovered: 29
+Test Results:
+✓ ArrayOperationsPerformanceTest.correctnessTest (3ms)
+✓ ArrayOperationsPerformanceTest.performanceTest (48ms)
+✓ ArrayOperationsPerformanceTest.handMadeLinkedListPerformanceTest (6271ms)
+✓ ArrayOperationsPerformanceTest.handMadeHashMapPerformanceTest (52ms)
+✓ ArrayOperationsPerformanceTest.handMadeHashMapDoubleHashPerformanceTest (82ms)
+✓ FibonacciAlgorithmsTest.correctnessTest (67ms)
+✓ FibonacciAlgorithmsTest.performanceAndMemoryTest (5565ms)
+✓ HandMadeHashMapDoubleHashTest.testContainsKey (43ms)
+✓ HandMadeHashMapDoubleHashTest.testSizeAndIsEmpty (2ms)
+✓ HandMadeHashMapDoubleHashTest.testPutOverwrite (0ms)
+✓ HandMadeHashMapDoubleHashTest.testPutAndGet (0ms)
+✓ HandMadeHashMapDoubleHashTest.testContainsValue (0ms)
+✓ HandMadeHashMapDoubleHashTest.testRemove (0ms)
+✓ HandMadeHashMapDoubleHashTest.testClear (0ms)
+✓ HandMadeHashMapDoubleHashTest.testPutAll (0ms)
+✓ HandMadeHashMapDoubleHashTest.testCollisionHandling (2ms)
+✓ HandMadeHashMapDoubleHashTest.testEntrySetKeySetValues (7ms)
+✓ HandMadeHashMapTest.testContainsKey (0ms)
+✓ HandMadeHashMapTest.testSizeAndIsEmpty (0ms)
+✓ HandMadeHashMapTest.testPutAndGet (0ms)
+✓ HandMadeHashMapTest.testRemove (0ms)
+✓ HandMadeHashMapTest.testClear (0ms)
+✓ HandMadeHashMapTest.testKeySetValuesEntrySet (0ms)
+✓ HandMadeLinkedListTest.testGetLastThrowsExceptionWhenEmpty (1ms)
+✓ HandMadeLinkedListTest.testGetFirstThrowsExceptionWhenEmpty (1ms)
+✓ HandMadeLinkedListTest.testSizeInitiallyZero (0ms)
+✓ HandMadeLinkedListTest.testAddFirstAndGetFirst (0ms)
+✓ HandMadeLinkedListTest.testAddLastAndGetLast (0ms)
+✓ HandMadeLinkedListTest.testAddFirstAndAddLastCombined (0ms)
+
+Summary:
+Total tests: 29
+Passed: 29
+Failed: 0
+Total execution time: 12144ms
+Success rate: 100,0%
