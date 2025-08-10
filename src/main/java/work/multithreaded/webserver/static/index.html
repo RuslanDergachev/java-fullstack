@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Custom Web Server — Главная</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --bg: #0b1020;
+            --fg: #e9ecf1;
+            --accent: #4da3ff;
+            --muted: #9aa4b2;
+            --card: #121a2e;
+            --ok: #36c18a;
+            --warn: #ffb84d;
+            --err: #ff6b6b;
+        }
+        html, body {
+            margin: 0;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.5;
+        }
+        header {
+            padding: 24px 16px;
+            background: linear-gradient(135deg, #101935, #0b1328);
+            border-bottom: 1px solid #1c2746;
+        }
+        header h1 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            letter-spacing: .3px;
+        }
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+        main {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 20px 16px 60px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid #1c2746;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+        }
+        .card h2 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+        }
+        .muted { color: var(--muted); }
+        .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        button, .linklike {
+            background: #182449;
+            color: var(--fg);
+            border: 1px solid #2a3c73;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: .15s ease-in-out;
+            text-decoration: none;
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+        }
+        button:hover, .linklike:hover { background: #203061; border-color: #3f59a4; }
+        .accent { color: var(--accent); }
+        .ok { color: var(--ok); }
+        .warn { color: var(--warn); }
+        .err { color: var(--err); }
+        pre, code, textarea, input[type="text"] {
+            background: #0b1328;
+            color: var(--fg);
+            border: 1px solid #1c2746;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+            font-size: 13px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        textarea { min-height: 120px; resize: vertical; }
+        footer {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 16px 30px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 720px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Custom Web Server</h1>
+    <p class="muted">Пример сервера на собственном ExecutorService. Эндпоинты: <span class="accent">/</span>, <span class="accent">/static/*</span>, <span class="accent">/api/time</span>, <span class="accent">/api/stats</span>, <span class="accent">POST /api/echo</span>.</p>
+</header>
+
+<main>
+    <section class="card">
+        <h2>Статика</h2>
+        <div class="row" style="margin-bottom:10px">
+            <a class="linklike" href="/static/" target="_blank">Открыть /static/</a>
+            <a class="linklike" href="/static/index.html" target="_blank">Открыть /static/index.html</a>
+        </div>
+        <p class="muted">Раздача файлов из каталога <code>./static</code>. Вы находитесь на <code>/</code>, который отдаёт этот файл.</p>
+    </section>
+
+    <section class="card">
+        <h2>GET /api/time</h2>
+        <div class="row" style="margin-bottom:10px">
+            <button id="btnTime">Получить время</button>
+        </div>
+        <pre id="outTime" class="muted">Нажмите кнопку для запроса...</pre>
+    </section>
+
+    <section class="card">
+        <h2>GET /api/stats</h2>
+        <div class="row" style="margin-bottom:10px">
+            <button id="btnStats">Показать статистику</button>
+        </div>
+        <pre id="outStats" class="muted">Нажмите кнопку для запроса...</pre>
+    </section>
+
+    <section class="card">
+        <h2>POST /api/echo</h2>
+        <div class="grid-2">
+            <textarea id="echoInput" placeholder="Введите любой текст, затем нажмите «Отправить»"></textarea>
+            <pre id="echoOutput" class="muted">Ответ сервера появится здесь...</pre>
+        </div>
+        <div class="row" style="margin-top:10px">
+            <button id="btnEcho">Отправить</button>
+            <span class="muted">Контент отправляется как <code>text/plain; charset=UTF-8</code></span>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div>Сервер отвечает в кодировке UTF‑8. Проверьте корректность отображения русских символов.</div>
+</footer>
+
+<script>
+    const $ = (id) => document.getElementById(id);
+
+    async function safeFetch(url, options = {}) {
+        try {
+            const res = await fetch(url, options);
+            const ct = res.headers.get('content-type') || '';
+            const text = ct.includes('application/json') ? JSON.stringify(await res.json(), null, 2)
+                : await res.text();
+            return { ok: res.ok, status: res.status, body: text };
+        } catch (e) {
+            return { ok: false, status: 0, body: String(e) };
+        }
+    }
+
+    $('btnTime').addEventListener('click', async () => {
+        const res = await safeFetch('/api/time');
+        $('outTime').textContent = `status: ${res.status}\n\n${res.body}`;
+        $('outTime').className = res.ok ? 'ok' : 'err';
+    });
+
+    $('btnStats').addEventListener('click', async () => {
+        const res = await safeFetch('/api/stats');
+        $('outStats').textContent = `status: ${res.status}\n\n${res.body}`;
+        $('outStats').className = res.ok ? 'ok' : 'err';
+    });
+
+    $('btnEcho').addEventListener('click', async () => {
+        const text = $('echoInput').value;
+        const res = await safeFetch('/api/echo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain; charset=UTF-8' },
+            body: text
+        });
+        $('echoOutput').textContent = `status: ${res.status}\n\n${res.body}`;
+        $('echoOutput').className = res.ok ? 'ok' : 'err';
+    });
+</script>
+</body>
+</html>
