@@ -5,10 +5,9 @@ import work.multithreaded.LargeShortArray;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 public class Main {
-    static void main(String[] args) throws InterruptedException, ExecutionException {
+    static void main(String[] args) {
 
         int size = 100_000_000;
         short[] data = new short[size];
