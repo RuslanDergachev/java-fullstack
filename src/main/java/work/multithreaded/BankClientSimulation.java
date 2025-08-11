@@ -42,10 +42,10 @@ public class BankClientSimulation {
                 executor.submit(() -> {
                     try {
                         for (int i = 0; i < opsPerThread; i++) {
-                            int from = (int) bank.pickRandomAccountId();
+                            int from = bank.pickRandomAccountId();
                             int to;
                             do {
-                                to = (int) bank.pickRandomAccountId();
+                                to = bank.pickRandomAccountId();
                             } while (to == from);
 
                             int first = Math.min(from, to);
@@ -94,10 +94,10 @@ public class BankClientSimulation {
                 executor.submit(() -> {
                     try {
                         for (int i = 0; i < opsPerThread; i++) {
-                            int from = (int) bank.pickRandomAccountId();
+                            int from = bank.pickRandomAccountId();
                             int to;
                             do {
-                                to = (int) bank.pickRandomAccountId();
+                                to = bank.pickRandomAccountId();
                             } while (to == from);
 
                             int first = Math.min(from, to);
@@ -139,7 +139,7 @@ public class BankClientSimulation {
 
     // AtomicLong[]
     private static void runWithAtomics(int accounts, long min, long max, int threads, int opsPerThread) throws InterruptedException {
-        System.out.println("\n--- Version C: Atomics (bonus) ---");
+        System.out.println("\n--- Version C: Atomics  ---");
 
         AtomicLong[] acc = new AtomicLong[accounts];
         for (int i = 0; i < accounts; i++) {
@@ -156,37 +156,58 @@ public class BankClientSimulation {
             for (int t = 0; t < threads; t++) {
                 executor.submit(() -> {
                     try {
+                        ThreadLocalRandom rnd = ThreadLocalRandom.current();
                         for (int i = 0; i < opsPerThread; i++) {
-                            int from = ThreadLocalRandom.current().nextInt(accounts);
+                            int from = rnd.nextInt(accounts);
                             int to;
                             do {
-                                to = ThreadLocalRandom.current().nextInt(accounts);
+                                to = rnd.nextInt(accounts);
                             } while (to == from);
 
                             AtomicLong a = acc[from];
                             AtomicLong b = acc[to];
 
-                            AtomicLong first = (from < to) ? a : b;
-                            AtomicLong second = (from < to) ? b : a;
-
-                            synchronized (first) {
-                                synchronized (second) {
-                                    long fromBal = a.get();
-                                    if (fromBal <= 0) continue;
-
-                                    long x = ThreadLocalRandom.current().nextLong(1, fromBal + 1);
-                                    a.addAndGet(-x);
-
-                                    long toBal = b.get();
-                                    long newTo;
-                                    try {
-                                        newTo = Math.addExact(toBal, x);
-                                    } catch (ArithmeticException ex) {
-                                        a.addAndGet(x);
-                                        continue;
-                                    }
-                                    b.set(newTo);
+                            // 1) Атомарное списание x с "from" через CAS
+                            long x;
+                            while (true) {
+                                long fromBal = a.get();
+                                if (fromBal <= 0) {
+                                    x = 0;
+                                    break;
                                 }
+                                x = rnd.nextLong(1, fromBal + 1); // 1..fromBal
+                                long newFrom = fromBal - x;
+                                if (a.compareAndSet(fromBal, newFrom)) {
+                                    break;
+                                }
+                                Thread.onSpinWait();
+                            }
+                            if (x == 0) continue;
+
+                            // 2) Атомарное зачисление x на "to" через CAS, с обработкой переполнения и откатом
+                            int retries = 0;
+                            while (true) {
+                                long toBal = b.get();
+                                long newTo;
+                                try {
+                                    newTo = Math.addExact(toBal, x);
+                                } catch (ArithmeticException ex) {
+                                    // переполнение у получателя — откат списания
+                                    a.addAndGet(x);
+                                    break;
+                                }
+
+                                if (b.compareAndSet(toBal, newTo)) {
+                                    // успех
+                                    break;
+                                }
+
+                                // CAS не прошёл — ретраи; при длительном конфликте делаем откат
+                                if (++retries >= 64) {
+                                    a.addAndGet(x);
+                                    break;
+                                }
+                                if ((retries & 7) == 0) Thread.onSpinWait();
                             }
                         }
                     } finally {

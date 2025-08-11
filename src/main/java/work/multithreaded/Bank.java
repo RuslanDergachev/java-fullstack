@@ -31,30 +31,18 @@ public class Bank {
         }
     }
 
-    public long pickRandomAccountId() {
+    public int pickRandomAccountId() {
         return ThreadLocalRandom.current().nextInt(numberOfAccounts);
     }
 
-    public int pickRandomAccountIdInt() {
-        return ThreadLocalRandom.current().nextInt(numberOfAccounts);
-    }
-
-    public long getAccountBalance(long id) {
+    public long getAccountBalance(int id) {
         int idx = ensureValidAccountId(id);
         return Objects.requireNonNull(accountsBalances.get(idx), "Account does not exist");
     }
 
-    public long getAccountBalance(int id) {
-        return getAccountBalance((long) id);
-    }
-
-    public void setAccountBalance(long id, long newBalance) {
+    public void setAccountBalance(int id, long newBalance) {
         int idx = ensureValidAccountId(id);
         accountsBalances.put(idx, newBalance);
-    }
-
-    public void setAccountBalance(int id, long newBalance) {
-        setAccountBalance((long) id, newBalance);
     }
 
     public BigInteger getSumOfAllAcounts() {
@@ -68,41 +56,10 @@ public class Bank {
         return getSumOfAllAcounts();
     }
 
-    public boolean transfer(int from, int to, long amount) {
-        if (from == to || amount <= 0) return false;
-        ensureValidAccountId(from);
-        ensureValidAccountId(to);
-
-        int first = Math.min(from, to);
-        int second = Math.max(from, to);
-        synchronized (accountsBalances.computeIfAbsent(first, k -> 0L)) {
-            synchronized (accountsBalances.computeIfAbsent(second, k -> 0L)) {
-                long fromBal = accountsBalances.get(from);
-                if (fromBal < amount) return false;
-
-                long toBal = accountsBalances.get(to);
-                long newFrom = fromBal - amount;
-                long newTo;
-                try {
-                    newTo = Math.addExact(toBal, amount);
-                } catch (ArithmeticException ex) {
-                    return false;
-                }
-                accountsBalances.put(from, newFrom);
-                accountsBalances.put(to, newTo);
-                return true;
-            }
-        }
-    }
-
-    private int ensureValidAccountId(long id) {
+    private int ensureValidAccountId(int id) {
         if (id < 0 || id >= numberOfAccounts) {
             throw new IllegalArgumentException("Invalid account id: " + id);
         }
-        return (int) id;
-    }
-
-    private void ensureValidAccountId(int id) {
-        ensureValidAccountId((long) id);
+        return id;
     }
 }
