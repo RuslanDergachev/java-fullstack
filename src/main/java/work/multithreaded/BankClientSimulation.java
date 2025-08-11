@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class BankClientSimulation {
 
-     static void main(String[] args) throws InterruptedException {
+    static void main(String[] args) throws InterruptedException {
         final int accounts = 200;
         final long min = 0L;
         final long max = 1_000L;
@@ -26,8 +26,8 @@ public class BankClientSimulation {
         runWithAtomics(accounts, min, max, 1_000, 1_000);
 
         BigInteger fin = bank.getSumOfAllAccounts();
-        System.out.println("Final total (Bank):   " + fin);
-        System.out.println("Totals equal (Bank):  " + initial.equals(fin));
+        System.out.println("Final total: " + fin);
+        System.out.println("Totals equal: " + initial.equals(fin));
     }
 
     private static void runWithSynchronized(Bank bank, int accounts, int threads, int opsPerThread) throws InterruptedException {
