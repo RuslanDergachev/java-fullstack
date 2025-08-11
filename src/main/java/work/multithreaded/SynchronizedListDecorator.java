@@ -12,11 +12,6 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
-/**
- * Потокобезопасный декоратор над CustomList.
- * - Все операции синхронизированы на приватном lock.
- * - Итераторы и subList возвращают копии (snapshot), чтобы обход не требовал удержания lock.
- */
 public final class SynchronizedListDecorator<T> implements List<T> {
     private final CustomList<T> delegate;
     private final Object lock = new Object();

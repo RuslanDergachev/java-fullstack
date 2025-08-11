@@ -12,12 +12,6 @@ import java.util.Objects;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.UnaryOperator;
 
-/**
- * Потокобезопасный декоратор над CustomList на основе ReentrantReadWriteLock.
- * - Чтения (size, isEmpty, get, iterator и т.п.) идут под readLock
- * - Записи (add, set, remove и т.п.) — под writeLock
- * - Итераторы и subList возвращают снепшоты (копии), чтобы не держать блокировки во время обхода.
- */
 public final class ReadWriteLockListDecorator<T> implements List<T> {
     private final CustomList<T> delegate;
     private final ReentrantReadWriteLock rw = new ReentrantReadWriteLock();

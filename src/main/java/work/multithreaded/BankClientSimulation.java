@@ -16,26 +16,20 @@ public class BankClientSimulation {
 
         Bank bank = new Bank(accounts, min, max);
 
-        // 1) Печатаем изначальную сумму
         BigInteger initial = bank.getSumOfAllAccounts();
         System.out.println("Initial total: " + initial);
 
-        // synchronized — пер-счётные мониторы
         runWithSynchronized(bank, accounts, 1_000, 1_000);
 
-        // ReentrantLock — пер-счётные локи
         runWithLocks(bank, accounts, 1_000, 1_000);
 
-        // Atomics — имитация платёжной системы на атомиках
         runWithAtomics(accounts, min, max, 1_000, 1_000);
 
-        // Итоговая сумма в исходном банке (после A и B — должна оставаться стабильной)
         BigInteger fin = bank.getSumOfAllAccounts();
         System.out.println("Final total (Bank):   " + fin);
         System.out.println("Totals equal (Bank):  " + initial.equals(fin));
     }
 
-    // synchronized
     private static void runWithSynchronized(Bank bank, int accounts, int threads, int opsPerThread) throws InterruptedException {
         System.out.println("\n--- Version A: synchronized ---");
         Object[] locks = new Object[accounts];
@@ -54,7 +48,6 @@ public class BankClientSimulation {
                                 to = (int) bank.pickRandomAccountId();
                             } while (to == from);
 
-                            // фиксированный порядок захвата, чтобы не было дедлоков
                             int first = Math.min(from, to);
                             int second = Math.max(from, to);
 
@@ -64,15 +57,12 @@ public class BankClientSimulation {
                                     if (fromBal <= 0) continue;
 
                                     long x = ThreadLocalRandom.current().nextLong(1, fromBal + 1);
-                                    // списание
                                     bank.setAccountBalance(from, fromBal - x);
-                                    // зачисление
                                     long toBal = bank.getAccountBalance(to);
                                     long newTo;
                                     try {
                                         newTo = Math.addExact(toBal, x);
                                     } catch (ArithmeticException ex) {
-                                        // переполнение — пропускаем операцию и откатываем
                                         bank.setAccountBalance(from, fromBal);
                                         continue;
                                     }
@@ -147,7 +137,7 @@ public class BankClientSimulation {
         System.out.println("Total after B: " + bank.getSumOfAllAccounts());
     }
 
-    // Отдельная модель на AtomicLong[], где перевод — под двойной синхронизацией на самих атомиках.
+    // AtomicLong[]
     private static void runWithAtomics(int accounts, long min, long max, int threads, int opsPerThread) throws InterruptedException {
         System.out.println("\n--- Version C: Atomics (bonus) ---");
 
@@ -176,7 +166,6 @@ public class BankClientSimulation {
                             AtomicLong a = acc[from];
                             AtomicLong b = acc[to];
 
-                            // Порядок захвата по индексу исключает дедлоки
                             AtomicLong first = (from < to) ? a : b;
                             AtomicLong second = (from < to) ? b : a;
 

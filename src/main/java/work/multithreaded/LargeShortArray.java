@@ -1,6 +1,5 @@
 package work.multithreaded;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.IntStream;
 
@@ -11,7 +10,7 @@ public class LargeShortArray {
         this.array = array;
     }
 
-    public long sumWithParallelStream(int threadsCount) throws ExecutionException, InterruptedException {
+    public long sumWithParallelStream(int threadsCount) {
         ForkJoinPool customThreadPool = new ForkJoinPool(threadsCount);
         try {
             return customThreadPool.submit(
