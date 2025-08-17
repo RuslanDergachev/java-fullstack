@@ -21,41 +21,25 @@ public class Main {
         String outputFile = "src/test/java/results.txt";
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
-
             writer.write("ThreadCount,Method,TimeMs\n");
 
             for (int threads : threadCounts) {
-                // Manual Threads method
                 long start = System.nanoTime();
-                try {
-                    long sumManual = psa.sumWithParallelStream(threads);
-                    long elapsedMs = (System.nanoTime() - start) / 1_000_000;
-                    writer.write(String.format("%d,sumWithManualThreads,%d\n", threads, elapsedMs));
-                    writer.flush();
-                    System.out.printf("Threads=%d manual sum=%,d time=%dms\n", threads, sumManual, elapsedMs);
-                } catch (Exception e) {
-                    System.err.println("Error in sumWithManualThreads with threads=" + threads);
-                    e.printStackTrace();
-                }
+                long sumManual = psa.sumWithParallelThreads(threads);
+                long elapsedManualMs = (System.nanoTime() - start) / 1_000_000;
+                writer.write(String.format("%d,sumWithParallelThreads,%d%n", threads, elapsedManualMs));
+                System.out.printf("Threads=%d manual sum=%,d time=%dms%n", threads, sumManual, elapsedManualMs);
 
                 start = System.nanoTime();
-                try {
-                    long sumParallel = psa.sumWithParallelStream(threads);
-                    long elapsedMs = (System.nanoTime() - start) / 1_000_000;
-                    writer.write(String.format("%d,sumWithParallelStream,%d\n", threads, elapsedMs));
-                    writer.flush();
-                    System.out.printf("Threads=%d parallel sum=%,d time=%dms\n", threads, sumParallel, elapsedMs);
-                } catch (Exception e) {
-                    System.err.println("Error in sumWithParallelStream with threads=" + threads);
-                    e.printStackTrace();
-                }
+                long sumParallel = psa.sumWithParallelStream(threads);
+                long elapsedParallelMs = (System.nanoTime() - start) / 1_000_000;
+                writer.write(String.format("%d,sumWithParallelStream,%d%n", threads, elapsedParallelMs));
+                System.out.printf("Threads=%d parallel sum=%,d time=%dms%n", threads, sumParallel, elapsedParallelMs);
             }
 
             System.out.println("Results written to " + outputFile);
-
         } catch (IOException ioe) {
             System.err.println("Error writing results file: " + ioe.getMessage());
         }
-
     }
 }

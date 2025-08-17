@@ -16,18 +16,24 @@ public class BankClientSimulation {
 
         Bank bank = new Bank(accounts, min, max);
 
-        BigInteger initial = bank.getSumOfAllAccounts();
-        System.out.println("Initial total: " + initial);
+        System.out.println("Initial total: " + bank.getSumOfAllAccounts());
+
 
         runWithSynchronized(bank, accounts, 1_000, 1_000);
+        BigInteger finalTotalSinhronized = bank.getSumOfAllAccounts();
+        System.out.println("Final total: " + finalTotalSinhronized);
+        System.out.println("Totals equal: " + bank.getSumOfAllAccounts().equals(finalTotalSinhronized));
 
         runWithLocks(bank, accounts, 1_000, 1_000);
+        BigInteger finalTotalLock = bank.getSumOfAllAccounts();
+        System.out.println("Final total: " + finalTotalLock);
+        System.out.println("Totals equal: " + bank.getSumOfAllAccounts().equals(finalTotalLock));
 
         runWithAtomics(accounts, min, max, 1_000, 1_000);
 
-        BigInteger fin = bank.getSumOfAllAccounts();
-        System.out.println("Final total: " + fin);
-        System.out.println("Totals equal: " + initial.equals(fin));
+        BigInteger finalTotalAtomic = bank.getSumOfAllAccounts();
+        System.out.println("Final total: " + finalTotalAtomic);
+        System.out.println("Totals equal: " + bank.getSumOfAllAccounts().equals(finalTotalAtomic));
     }
 
     private static void runWithSynchronized(Bank bank, int accounts, int threads, int opsPerThread) throws InterruptedException {
@@ -77,8 +83,6 @@ public class BankClientSimulation {
             }
             latch.await();
         }
-
-        System.out.println("Total after A: " + bank.getSumOfAllAccounts());
     }
 
     // ReentrantLock
@@ -133,8 +137,6 @@ public class BankClientSimulation {
             }
             latch.await();
         }
-
-        System.out.println("Total after B: " + bank.getSumOfAllAccounts());
     }
 
     // AtomicLong[]
@@ -146,9 +148,6 @@ public class BankClientSimulation {
             long delta = ThreadLocalRandom.current().nextLong(max - min + 1);
             acc[i] = new AtomicLong(min + delta);
         }
-
-        BigInteger initial = total(acc);
-        System.out.println("Initial total (Atomic): " + initial);
 
         CountDownLatch latch = new CountDownLatch(threads);
 
@@ -192,17 +191,14 @@ public class BankClientSimulation {
                                 try {
                                     newTo = Math.addExact(toBal, x);
                                 } catch (ArithmeticException ex) {
-                                    // переполнение у получателя — откат списания
                                     a.addAndGet(x);
                                     break;
                                 }
 
                                 if (b.compareAndSet(toBal, newTo)) {
-                                    // успех
                                     break;
                                 }
 
-                                // CAS не прошёл — ретраи; при длительном конфликте делаем откат
                                 if (++retries >= 64) {
                                     a.addAndGet(x);
                                     break;
@@ -217,15 +213,5 @@ public class BankClientSimulation {
             }
             latch.await();
         }
-
-        BigInteger fin = total(acc);
-        System.out.println("Final total (Atomic):   " + fin);
-        System.out.println("Totals equal (Atomic):  " + initial.equals(fin));
-    }
-
-    private static BigInteger total(AtomicLong[] acc) {
-        BigInteger sum = BigInteger.ZERO;
-        for (AtomicLong a : acc) sum = sum.add(BigInteger.valueOf(a.get()));
-        return sum;
     }
 }

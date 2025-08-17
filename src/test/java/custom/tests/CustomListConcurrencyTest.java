@@ -1,11 +1,13 @@
 package custom.tests;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.RepeatedTest;
 import work.collectionclasses.CustomList;
 import work.customannotatition.Test;
 import work.multithreaded.ReadWriteLockListDecorator;
 import work.multithreaded.SynchronizedListDecorator;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -29,10 +31,16 @@ public class CustomListConcurrencyTest {
         assertThat(syncCount).isEqualTo(PER_THREAD * 2);
         assertThat(rwCount).isEqualTo(PER_THREAD * 2);
 
-        System.out.println("Plain size observed: " + plainCount);
+        int expected = PER_THREAD * 2;
+        if (plainCount != expected) {
+            System.out.printf("[correctness] plain=%d (lost=%d), syncOK=%b, rwOK=%b%n",
+                              plainCount, (expected - plainCount),
+                              syncCount == expected, rwCount == expected);
+        }
     }
 
     @Test
+    @DisplayName("performance: single run (ms)")
     void performance_plain_vs_synchronized_vs_rwlock() throws Exception {
         long tPlain = timeMillis(() -> runTwoThreadsAdd(new CustomList<>()));
         long tSync  = timeMillis(() -> runTwoThreadsAdd(new SynchronizedListDecorator<>(new CustomList<>())));
@@ -46,7 +54,8 @@ public class CustomListConcurrencyTest {
         assertThat(runTwoThreadsAdd(rw)).isEqualTo(PER_THREAD * 2);
     }
 
-    @Test(description = "Compact summary: avg time, ratios, throughput")
+    @Test
+    @DisplayName("performance: avg over 5 runs (compact)")
     void performance_summary_compact() throws Exception {
         final int runs = 5;
         final long ops = PER_THREAD * 2L;
@@ -70,6 +79,48 @@ public class CustomListConcurrencyTest {
         System.out.printf("Throughput (ops/s): plain=%.0f, sync=%.0f, rw=%.0f%n",
                           plainRps, syncRps, rwRps);
         System.out.println("(ops = " + ops + " adds per run)");
+    }
+
+    @Test
+    @DisplayName("correctness: 100 runs diff and summary")
+    void correctness_diff_over_100() throws Exception {
+        final int runs = 100;
+        final int expected = PER_THREAD * 2;
+
+        List<Integer> results = new ArrayList<>(runs);
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        long sum = 0;
+        int ok = 0;
+
+        System.out.println("=== Plain correctness over " + runs + " runs ===");
+        for (int i = 1; i <= runs; i++) {
+            int plain = runTwoThreadsAdd(new CustomList<>());
+            int lost = expected - plain;
+
+            results.add(plain);
+            min = Math.min(min, plain);
+            max = Math.max(max, plain);
+            sum += plain;
+            if (plain == expected) ok++;
+
+            System.out.printf("run #%03d: plain=%d (lost=%d)%n", i, plain, lost);
+        }
+
+        results.sort(Integer::compareTo);
+        double median = (runs % 2 == 1)
+                ? results.get(runs / 2)
+                : (results.get(runs / 2 - 1) + results.get(runs / 2)) / 2.0;
+
+        long avg = Math.round(sum / (double) runs);
+        int minLost = expected - min;
+        int maxLost = expected - max;
+        long avgLost = expected - avg;
+        double okPct = ok * 100.0 / runs;
+
+        System.out.printf("=== Summary x%d ===%n", runs);
+        System.out.printf("min=%d (lost=%d), max=%d (lost=%d), avg=%d (lost=%.0f), median=%.0f, ok=%d (%.1f%%)%n",
+                          min, minLost, max, maxLost, avg, (double) avgLost, median, ok, okPct);
     }
 
     private static long avgMillis(int runs, IoRunnable r) throws Exception {

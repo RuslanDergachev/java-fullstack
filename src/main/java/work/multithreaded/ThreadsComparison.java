@@ -20,7 +20,6 @@ public class ThreadsComparison {
 
     private static void runThreads(ThreadKind kind) throws InterruptedException {
 
-        // Run garbage collector and wait a bit to minimize noise
         runGC();
 
         long beforeMem = usedMemory();
