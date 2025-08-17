@@ -17,26 +17,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CustomListConcurrencyTest {
     private static final int PER_THREAD = 1_000_000;
 
-    @RepeatedTest(100)
+    @Test
     void correctness_plain_vs_synchronized_vs_rwlock() throws Exception {
-        List<Integer> plain = new CustomList<>();
-        int plainCount = runTwoThreadsAdd(plain);
+        final int runs = 100;
+        for (int run = 1; run <= runs; run++) {
+            List<Integer> plain = new CustomList<>();
+            int plainCount = runTwoThreadsAdd(plain);
 
-        List<Integer> sync = new SynchronizedListDecorator<>(new CustomList<>());
-        int syncCount = runTwoThreadsAdd(sync);
+            List<Integer> sync = new SynchronizedListDecorator<>(new CustomList<>());
+            int syncCount = runTwoThreadsAdd(sync);
 
-        List<Integer> rw = new ReadWriteLockListDecorator<>(new CustomList<>());
-        int rwCount = runTwoThreadsAdd(rw);
+            List<Integer> rw = new ReadWriteLockListDecorator<>(new CustomList<>());
+            int rwCount = runTwoThreadsAdd(rw);
 
-        assertThat(syncCount).isEqualTo(PER_THREAD * 2);
-        assertThat(rwCount).isEqualTo(PER_THREAD * 2);
+            assertThat(syncCount).isEqualTo(PER_THREAD * 2);
+            assertThat(rwCount).isEqualTo(PER_THREAD * 2);
 
-        int expected = PER_THREAD * 2;
-        if (plainCount != expected) {
-            System.out.printf("[correctness] plain=%d (lost=%d), syncOK=%b, rwOK=%b%n",
-                              plainCount, (expected - plainCount),
-                              syncCount == expected, rwCount == expected);
+            int expected = PER_THREAD * 2;
+            if (plainCount != expected) {
+                System.out.printf(
+                        "[run #%03d] plain=%d (lost=%d), syncOK=%b, rwOK=%b%n",
+                        run, plainCount, (expected - plainCount),
+                        syncCount == expected, rwCount == expected
+                );
+            }
         }
+
     }
 
     @Test
