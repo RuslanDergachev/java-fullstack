@@ -1,23 +1,25 @@
 package work.multithreaded;
 
+import work.collectionclasses.CustomList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.UnaryOperator;
 
 public final class ReadWriteLockListDecorator<T> implements List<T> {
-    private final List<T> delegate;
+    private final CustomList<T> delegate;
     private final ReentrantReadWriteLock rw = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock.ReadLock r = rw.readLock();
     private final ReentrantReadWriteLock.WriteLock w = rw.writeLock();
 
-    public ReadWriteLockListDecorator(List<T> delegate) {
-        this.delegate = Objects.requireNonNull(delegate);
+    public ReadWriteLockListDecorator(CustomList<T> delegate) {
+        this.delegate = Objects.requireNonNull(delegate, "delegate");
     }
 
     @Override
@@ -34,6 +36,36 @@ public final class ReadWriteLockListDecorator<T> implements List<T> {
         r.lock();
         try {
             return new ArrayList<>(delegate).iterator();
+        } finally {
+            r.unlock();
+        }
+    }
+
+    @Override
+    public ListIterator<T> listIterator() {
+        r.lock();
+        try {
+            return new ArrayList<>(delegate).listIterator();
+        } finally {
+            r.unlock();
+        }
+    }
+
+    @Override
+    public ListIterator<T> listIterator(int index) {
+        r.lock();
+        try {
+            return new ArrayList<>(delegate).listIterator(index);
+        } finally {
+            r.unlock();
+        }
+    }
+
+    @Override
+    public List<T> subList(int fromIndex, int toIndex) {
+        r.lock();
+        try {
+            return new ArrayList<>(delegate.subList(fromIndex, toIndex));
         } finally {
             r.unlock();
         }
@@ -92,14 +124,4 @@ public final class ReadWriteLockListDecorator<T> implements List<T> {
 
     @Override
     public int lastIndexOf(Object o) { r.lock(); try { return delegate.lastIndexOf(o); } finally { r.unlock(); } }
-
-    @Override
-    public ListIterator<T> listIterator() { r.lock(); try { return new ArrayList<>(delegate).listIterator(); } finally { r.unlock(); } }
-
-    @Override
-    public ListIterator<T> listIterator(int index) { r.lock(); try { return new ArrayList<>(delegate).listIterator(index); } finally { r.unlock(); } }
-
-    @Override
-    public List<T> subList(int fromIndex, int toIndex) { r.lock(); try { return new ArrayList<>(delegate.subList(fromIndex, toIndex)); } finally { r.unlock(); } }
 }
-
