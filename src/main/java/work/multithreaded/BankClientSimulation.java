@@ -18,22 +18,31 @@ public class BankClientSimulation {
 
         System.out.println("Initial total: " + bank.getSumOfAllAccounts());
 
+        long start, end;
 
+        start = System.nanoTime();
         runWithSynchronized(bank, accounts, 1_000, 1_000);
-        BigInteger finalTotalSinhronized = bank.getSumOfAllAccounts();
-        System.out.println("Final total: " + finalTotalSinhronized);
-        System.out.println("Totals equal: " + bank.getSumOfAllAccounts().equals(finalTotalSinhronized));
+        end = System.nanoTime();
+        BigInteger finalTotalSynchronized = bank.getSumOfAllAccounts();
+        System.out.println("Final total synchronized: " + finalTotalSynchronized);
+        System.out.println("Totals equal: " + bank.getSumOfAllAccounts().equals(finalTotalSynchronized));
+        System.out.println("Time elapsed (synchronized): " + ((end - start) / 1_000_000) + " ms");
 
+        start = System.nanoTime();
         runWithLocks(bank, accounts, 1_000, 1_000);
+        end = System.nanoTime();
         BigInteger finalTotalLock = bank.getSumOfAllAccounts();
-        System.out.println("Final total: " + finalTotalLock);
+        System.out.println("Final total with locks: " + finalTotalLock);
         System.out.println("Totals equal: " + bank.getSumOfAllAccounts().equals(finalTotalLock));
+        System.out.println("Time elapsed (locks): " + ((end - start) / 1_000_000) + " ms");
 
+        start = System.nanoTime();
         runWithAtomics(accounts, min, max, 1_000, 1_000);
-
+        end = System.nanoTime();
         BigInteger finalTotalAtomic = bank.getSumOfAllAccounts();
-        System.out.println("Final total: " + finalTotalAtomic);
+        System.out.println("Final total with atomics: " + finalTotalAtomic);
         System.out.println("Totals equal: " + bank.getSumOfAllAccounts().equals(finalTotalAtomic));
+        System.out.println("Time elapsed (atomics): " + ((end - start) / 1_000_000) + " ms");
     }
 
     private static void runWithSynchronized(Bank bank, int accounts, int threads, int opsPerThread) throws InterruptedException {

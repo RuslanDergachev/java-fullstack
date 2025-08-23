@@ -42,6 +42,36 @@ public final class ReadWriteLockListDecorator<T> implements List<T> {
     }
 
     @Override
+    public ListIterator<T> listIterator() {
+        r.lock();
+        try {
+            return new ArrayList<>(delegate).listIterator();
+        } finally {
+            r.unlock();
+        }
+    }
+
+    @Override
+    public ListIterator<T> listIterator(int index) {
+        r.lock();
+        try {
+            return new ArrayList<>(delegate).listIterator(index);
+        } finally {
+            r.unlock();
+        }
+    }
+
+    @Override
+    public List<T> subList(int fromIndex, int toIndex) {
+        r.lock();
+        try {
+            return new ArrayList<>(delegate.subList(fromIndex, toIndex));
+        } finally {
+            r.unlock();
+        }
+    }
+
+    @Override
     public Object[] toArray() { r.lock(); try { return delegate.toArray(); } finally { r.unlock(); } }
 
     @Override
@@ -94,34 +124,4 @@ public final class ReadWriteLockListDecorator<T> implements List<T> {
 
     @Override
     public int lastIndexOf(Object o) { r.lock(); try { return delegate.lastIndexOf(o); } finally { r.unlock(); } }
-
-    @Override
-    public ListIterator<T> listIterator() {
-        r.lock();
-        try {
-            return new ArrayList<>(delegate).listIterator();
-        } finally {
-            r.unlock();
-        }
-    }
-
-    @Override
-    public ListIterator<T> listIterator(int index) {
-        r.lock();
-        try {
-            return new ArrayList<>(delegate).listIterator(index);
-        } finally {
-            r.unlock();
-        }
-    }
-
-    @Override
-    public List<T> subList(int fromIndex, int toIndex) {
-        r.lock();
-        try {
-            return new ArrayList<>(delegate.subList(fromIndex, toIndex));
-        } finally {
-            r.unlock();
-        }
-    }
 }

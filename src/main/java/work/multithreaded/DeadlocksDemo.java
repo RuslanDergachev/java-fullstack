@@ -9,7 +9,7 @@ public class DeadlocksDemo {
 
         //deadlockIntrinsicLocks();
         // deadlockReadWriteLockUpgrade();
-        // deadlockJoinCycle();
+        //deadlockJoinCycle();
     }
 
     // 1) Взаимная блокировка на двух intrinsic-замках с разным порядком захвата

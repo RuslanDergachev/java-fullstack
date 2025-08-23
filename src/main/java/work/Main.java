@@ -28,13 +28,13 @@ public class Main {
                 long sumManual = psa.sumWithParallelThreads(threads);
                 long elapsedManualMs = (System.nanoTime() - start) / 1_000_000;
                 writer.write(String.format("%d,sumWithParallelThreads,%d%n", threads, elapsedManualMs));
-                System.out.printf("Threads=%d manual sum=%,d time=%dms%n", threads, sumManual, elapsedManualMs);
+                System.out.printf("Threads=%d parralel threads sum=%,d time=%dms%n", threads, sumManual, elapsedManualMs);
 
                 start = System.nanoTime();
                 long sumParallel = psa.sumWithParallelStream(threads);
                 long elapsedParallelMs = (System.nanoTime() - start) / 1_000_000;
                 writer.write(String.format("%d,sumWithParallelStream,%d%n", threads, elapsedParallelMs));
-                System.out.printf("Threads=%d parallel sum=%,d time=%dms%n", threads, sumParallel, elapsedParallelMs);
+                System.out.printf("Threads=%d parallel stream sum=%,d time=%dms%n", threads, sumParallel, elapsedParallelMs);
             }
 
             System.out.println("Results written to " + outputFile);
