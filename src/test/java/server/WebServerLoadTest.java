@@ -1,4 +1,4 @@
-package custom.tests;
+package server;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.LongAdder;
 public class WebServerLoadTest {
 
     static void main(String[] args) throws Exception {
-        // Параметры (можно менять/передавать через args)
         String urlVirtual = "http://localhost:8080/api/time";
         String urlPlatform = "http://localhost:8081/api/time";
         int concurrency = 200;      // одновременных запросов

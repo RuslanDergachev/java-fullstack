@@ -28,26 +28,23 @@ public class CustomWebServer {
     private final CustomExecutorService executor;
     private ServerSocket serverSocket;
     private volatile boolean running = false;
-    private Thread acceptThread;
-
-
-    // Статистика
-    private final Instant startedAt = Instant.now();
+    private final Path staticRoot;
+    private volatile Instant startedAt;
     private final AtomicLong totalRequests = new AtomicLong(0);
-
-    // Корневая папка статики
-    private final Path staticRoot = Path.of("src/main/java/work/multithreaded/webserver/static").toAbsolutePath().normalize();
+    private Thread acceptThread;
 
     public CustomWebServer(int port, int threadPoolSize, boolean useVirtualThreads) {
         this.port = port;
         this.executor = new CustomExecutorService(threadPoolSize, useVirtualThreads);
+        this.staticRoot = Path.of("static");
     }
 
     public void start() throws IOException {
         if (running) return;
         running = true;
+        this.startedAt = Instant.now();
         serverSocket = new ServerSocket(port);
-        System.out.printf("Server started on port %d, static root: %s%n", port, staticRoot);
+        System.out.printf("Server started on port %d, static root: %s%n", port, staticRoot.toAbsolutePath().normalize());
 
         // Платформенный поток-акцептор удерживает JVM живой
         acceptThread = Thread.ofPlatform().name("acceptor").start(() -> {
@@ -62,6 +59,7 @@ public class CustomWebServer {
             }
         });
     }
+
 
     public void stop() {
         running = false;
@@ -293,16 +291,5 @@ public class CustomWebServer {
 
     private void writeCRLF(OutputStream out) throws IOException {
         out.write("\r\n".getBytes(StandardCharsets.UTF_8)); // UTF-8
-    }
-
-    static void main(String[] args) throws Exception {
-        int port = 8080;
-        int pool = 100;
-        boolean virtual = true;
-        CustomWebServer server = new CustomWebServer(port, pool, virtual);
-        server.start();
-        server.join();
-        Runtime.getRuntime().addShutdownHook(new Thread(server::stop));
-        System.out.printf("Open: http://localhost:%d/%n", port);
     }
 }

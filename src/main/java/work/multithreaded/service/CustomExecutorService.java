@@ -20,21 +20,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CustomExecutorService implements ExecutorService {
-    // Конфигурация
     private final int poolSize;
     private final boolean useVirtualThreads;
 
-    // Очередь задач для пул-режима
     private final BlockingQueue<Runnable> workQueue;
 
-    // Рабочие потоки в пул-режиме
     private final List<Thread> workers;
 
-    // Режим "виртуальный поток на каждую задачу"
     private final boolean perTaskVirtualMode;
     private final ConcurrentLinkedQueue<Thread> spawnedPerTaskThreads;
 
-    // Состояние
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
     private final AtomicBoolean terminated = new AtomicBoolean(false);
     private final AtomicInteger runningWorkers = new AtomicInteger(0);
@@ -121,7 +116,7 @@ public class CustomExecutorService implements ExecutorService {
                     }
                     // иначе продолжаем
                 } catch (Throwable t) {
-                    // Проглатываем исключение из задачи, чтобы рабочий не умирал
+                    // Проглатываем исключение из задачи
                 }
             }
         } finally {
@@ -224,7 +219,6 @@ public class CustomExecutorService implements ExecutorService {
     public void shutdown() {
         if (shutdown.compareAndSet(false, true)) {
             if (perTaskVirtualMode) {
-                // Ничего дополнительно: новые задачи не принимаем, существующие завершатся сами
                 terminated.compareAndSet(false, spawnedPerTaskThreads.isEmpty());
             } else {
                 // Для пула — если очередь пуста и нет работающих — terminated

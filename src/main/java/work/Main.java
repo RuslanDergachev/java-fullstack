@@ -1,11 +1,21 @@
 package work;
 
 import work.multithreaded.LargeShortArray;
+import work.multithreaded.service.CustomExecutorService;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main {
     static void main(String[] args) {
@@ -67,7 +77,7 @@ public class Main {
         }
     }
 
-    private static void runPerfCase(String kind, ExecutorService executor, int tasks, int sleepMs) {
+    private static void runPerfCase(String kind, CustomExecutorService executor, int tasks, int sleepMs) {
         try {
             // Минимизируем шум
             runGC();
@@ -128,7 +138,7 @@ public class Main {
         System.out.println();
     }
 
-    private static void runConcurrentCase(String kind, ExecutorService executor, int taskCount) {
+    private static void runConcurrentCase(String kind, CustomExecutorService executor, int taskCount) {
         AtomicInteger counter = new AtomicInteger(0);
         List<Future<?>> futures = new ArrayList<>(taskCount);
 
@@ -182,7 +192,7 @@ public class Main {
 
         // A) shutdown — завершаем текущие задачи, запрет новых
         {
-            ExecutorService exec = new CustomExecutorService(2, false);
+            CustomExecutorService exec = new CustomExecutorService(2, false);
             List<Future<Integer>> futures = new ArrayList<>();
 
             // Несколько длинных задач
@@ -233,7 +243,7 @@ public class Main {
 
         // B) shutdownNow — немедленное завершение: часть задач может не стартовать, очередь возвращается
         {
-            ExecutorService exec = new CustomExecutorService(2, false);
+            CustomExecutorService exec = new CustomExecutorService(2, false);
 
             // Отправим много задач, часть из них будет в очереди
             for (int i = 0; i < 50; i++) {
@@ -266,7 +276,7 @@ public class Main {
 
         // C) Режим виртуальных потоков на задачу: корректная остановка
         {
-            ExecutorService vt = CustomExecutorService.newVirtualThreadPerTaskExecutor();
+            CustomExecutorService vt = CustomExecutorService.newVirtualThreadPerTaskExecutor();
             List<Future<Integer>> futs = new ArrayList<>();
             for (int i = 0; i < 10_000; i++) {
                 futs.add(vt.submit(() -> {
