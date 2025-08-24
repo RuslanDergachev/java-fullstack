@@ -2,10 +2,9 @@ package work.multithreaded.webserver;
 
 import work.multithreaded.service.CustomExecutorService;
 
-import java.io.BufferedReader;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -60,7 +59,6 @@ public class CustomWebServer {
         });
     }
 
-
     public void stop() {
         running = false;
         try {
@@ -89,16 +87,23 @@ public class CustomWebServer {
     private void handleClient(Socket clientSocket) {
         try (clientSocket;
              InputStream in = clientSocket.getInputStream();
-             OutputStream out = clientSocket.getOutputStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+             BufferedInputStream bin = new BufferedInputStream(in);
+             OutputStream out = clientSocket.getOutputStream()) {
 
-            String requestLine = reader.readLine();
-            if (requestLine == null || requestLine.isEmpty()) {
+            clientSocket.setSoTimeout(10_000);
+
+            HeadPart hp = readUntilDoubleCRLF(bin, 32 * 1024);
+            if (hp == null) {
+                writeError(out, 400, "Bad Request");
+                return;
+            }
+            Request req = parseHead(hp.head());
+            if (req == null || req.requestLine == null) {
                 writeError(out, 400, "Bad Request");
                 return;
             }
 
-            String[] parts = requestLine.split("\\s+");
+            String[] parts = req.requestLine.split("\\s+");
             if (parts.length < 3) {
                 writeError(out, 400, "Bad Request");
                 return;
@@ -107,41 +112,124 @@ public class CustomWebServer {
             String rawPath = parts[1];
             String version = parts[2];
 
-            Map<String, String> headers = new LinkedHashMap<>();
-            String line;
-            while ((line = reader.readLine()) != null && !line.isEmpty()) {
-                int idx = line.indexOf(':');
-                if (idx > 0) {
-                    String h = line.substring(0, idx).trim();
-                    String v = line.substring(idx + 1).trim();
-                    headers.put(h.toLowerCase(Locale.ROOT), v);
-                }
-            }
-
             byte[] body = new byte[0];
-            if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
-                int contentLength = parseIntSafe(headers.get("content-length"), 0);
-                if (contentLength > 0) {
-                    body = in.readNBytes(contentLength);
+            int contentLength = parseIntSafe(req.headers.get("content-length"), 0);
+            if (("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) && contentLength > 0) {
+                body = readFixedBytes(bin, hp.leftover(), contentLength);
+                if (body == null || body.length < contentLength) {
+                    writeError(out, 400, "Bad Request");
+                    return;
                 }
             }
 
             totalRequests.incrementAndGet();
 
             if ("GET".equals(method)) {
-                routeGet(rawPath, headers, out, version);
+                routeGet(rawPath, req.headers, out, version);
             } else if ("POST".equals(method)) {
-                routePost(rawPath, headers, body, out, version);
+                routePost(rawPath, req.headers, body, out, version);
             } else {
                 writeError(out, 405, "Method Not Allowed");
             }
 
+        } catch (java.net.SocketTimeoutException ste) {
+            try {
+                OutputStream out = clientSocket.getOutputStream();
+                writeError(out, 408, "Request Timeout");
+            } catch (IOException ignore) { }
         } catch (Exception ex) {
             try {
                 OutputStream out = clientSocket.getOutputStream();
                 writeError(out, 500, "Internal Server Error");
             } catch (IOException ignore) { }
         }
+    }
+
+    private static final byte CR = 13;
+    private static final byte LF = 10;
+
+    private record Request(String requestLine, Map<String, String> headers) {}
+    private record HeadPart(byte[] head, byte[] leftover) {}
+
+    private Request parseHead(byte[] head) {
+        String all = new String(head, StandardCharsets.UTF_8);
+        String[] lines = all.split("\r\n");
+        if (lines.length == 0) return null;
+
+        String requestLine = lines[0];
+        Map<String, String> headers = new LinkedHashMap<>();
+        for (int i = 1; i < lines.length; i++) {
+            String line = lines[i];
+            if (line.isEmpty()) continue;
+            int idx = line.indexOf(':');
+            if (idx > 0) {
+                String h = line.substring(0, idx).trim().toLowerCase(Locale.ROOT);
+                String v = line.substring(idx + 1).trim();
+                headers.put(h, v);
+            }
+        }
+        return new Request(requestLine, headers);
+    }
+
+    private HeadPart readUntilDoubleCRLF(BufferedInputStream bin, int maxBytes) throws IOException {
+        byte[] buf = new byte[Math.min(8192, maxBytes)];
+        byte[] acc = new byte[0];
+        int matched = 0;
+
+        while (acc.length < maxBytes) {
+            int r = bin.read(buf);
+            if (r == -1) return null;
+            for (int i = 0; i < r; i++) {
+                byte b = buf[i];
+                switch (matched) {
+                    case 0 -> matched = (b == CR) ? 1 : 0;
+                    case 1 -> matched = (b == LF) ? 2 : (b == CR ? 1 : 0);
+                    case 2 -> matched = (b == CR) ? 3 : 0;
+                    case 3 -> {
+                        if (b == LF) {
+                            int headLenInThisBuf = i + 1 - 4; // без CRLFCRLF
+                            int totalHeadLen = acc.length + Math.max(0, headLenInThisBuf);
+                            byte[] head = new byte[totalHeadLen];
+                            System.arraycopy(acc, 0, head, 0, acc.length);
+                            if (headLenInThisBuf > 0) {
+                                System.arraycopy(buf, 0, head, acc.length, headLenInThisBuf);
+                            }
+                            int leftoverLen = r - (i + 1);
+                            byte[] leftover = new byte[leftoverLen];
+                            if (leftoverLen > 0) {
+                                System.arraycopy(buf, i + 1, leftover, 0, leftoverLen);
+                            }
+                            return new HeadPart(head, leftover);
+                        } else {
+                            matched = 0;
+                        }
+                    }
+                }
+            }
+            int oldLen = acc.length;
+            acc = java.util.Arrays.copyOf(acc, oldLen + r);
+            System.arraycopy(buf, 0, acc, oldLen, r);
+        }
+        return null;
+    }
+
+    private byte[] readFixedBytes(BufferedInputStream bin, byte[] leftover, int length) throws IOException {
+        byte[] data = new byte[length];
+        int off = 0;
+
+        if (leftover != null && leftover.length > 0) {
+            int copy = Math.min(length, leftover.length);
+            System.arraycopy(leftover, 0, data, 0, copy);
+            off += copy;
+        }
+
+        while (off < length) {
+            int r = bin.read(data, off, length - off);
+            if (r == -1) break;
+            off += r;
+        }
+        if (off == length) return data;
+        return java.util.Arrays.copyOf(data, off);
     }
 
     private void routeGet(String rawPath, Map<String, String> headers, OutputStream out, String version) throws IOException {
@@ -277,7 +365,7 @@ public class CustomWebServer {
 
     private void writeStatusLine(OutputStream out, String version, int code, String reason) throws IOException {
         String v = (version == null || version.isBlank()) ? "HTTP/1.1" : version;
-        out.write((v + " " + code + " " + reason + "\r\n").getBytes(StandardCharsets.UTF_8)); // UTF-8
+        out.write((v + " " + code + " " + reason + "\r\n").getBytes(StandardCharsets.UTF_8));
     }
 
     private void writeCommonHeaders(OutputStream out) throws IOException {
@@ -286,10 +374,10 @@ public class CustomWebServer {
     }
 
     private void writeHeader(OutputStream out, String name, String value) throws IOException {
-        out.write((name + ": " + value + "\r\n").getBytes(StandardCharsets.UTF_8)); // UTF-8
+        out.write((name + ": " + value + "\r\n").getBytes(StandardCharsets.UTF_8));
     }
 
     private void writeCRLF(OutputStream out) throws IOException {
-        out.write("\r\n".getBytes(StandardCharsets.UTF_8)); // UTF-8
+        out.write("\r\n".getBytes(StandardCharsets.UTF_8));
     }
 }
