@@ -2,6 +2,7 @@ package work.multithreaded;
 
 import java.math.BigInteger;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -9,6 +10,7 @@ public class Bank {
     private final int numberOfAccounts;
     private final long minBalance;
     private final long maxBalance;
+    private Random random = new Random();
 
     private final ConcurrentHashMap<Integer, Long> accountsBalances = new ConcurrentHashMap<>();
 
@@ -32,7 +34,7 @@ public class Bank {
     }
 
     public int pickRandomAccountId() {
-        return ThreadLocalRandom.current().nextInt(numberOfAccounts);
+        return random.nextInt(numberOfAccounts);
     }
 
     public long getAccountBalance(int id) {
