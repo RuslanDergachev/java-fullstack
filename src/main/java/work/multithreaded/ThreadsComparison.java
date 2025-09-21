@@ -20,8 +20,6 @@ public class ThreadsComparison {
 
     private static void runThreads(ThreadKind kind) throws InterruptedException {
 
-        runGC();
-
         long beforeMem = usedMemory();
         Instant start = Instant.now();
 
