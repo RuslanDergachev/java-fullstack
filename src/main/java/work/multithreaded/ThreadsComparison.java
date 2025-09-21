@@ -9,7 +9,7 @@ public class ThreadsComparison {
     private static final int THREAD_COUNT = 8000;
     private static final int SLEEP_MILLIS = 200;
 
-    public static void main(String[] args) throws Exception {
+     static void main(String[] args) throws Exception {
 
         System.out.println("Running " + THREAD_COUNT + " virtual threads...");
         runThreads(ThreadKind.VIRTUAL);
@@ -20,7 +20,6 @@ public class ThreadsComparison {
 
     private static void runThreads(ThreadKind kind) throws InterruptedException {
 
-        // Run garbage collector and wait a bit to minimize noise
         runGC();
 
         long beforeMem = usedMemory();
